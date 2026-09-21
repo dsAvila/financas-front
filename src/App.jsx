@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import CardResumo from "./components/CardResumo";
+import TabelaTransacoes from "./components/TabelaTransacoes";
 import { api } from "./services/api";
 
 export default function App() {
+  const [transacoes, setTransacoes] = useState([]);
   const [resumo, setResumo] = useState({
     saldo_caixa: 0,
     investimentos_brl: 0,
@@ -13,22 +15,23 @@ export default function App() {
   });
   const [carregando, setCarregando] = useState(true);
 
-  useEffect(() => {
-    async function carregarDados() {
-      try {
-        const response = await api.get("/transacoes");
-        if (response.data?.resumo) {
-          setResumo(response.data.resumo);
-        }
-      } catch (error) {
-        console.error("Erro ao procurar dados da API:", error);
-      } finally {
-        setCarregando(false);
+  const carregarDados = useCallback(async () => {
+    try {
+      const res = await api.get("/transacoes");
+      if (res.data) {
+        setTransacoes(res.data.transacoes || []);
+        setResumo(res.data.resumo || {});
       }
+    } catch (error) {
+      console.error("Erro ao carregar dados da API:", error);
+    } finally {
+      setCarregando(false);
     }
-
-    carregarDados();
   }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
@@ -44,10 +47,16 @@ export default function App() {
 
         {carregando ? (
           <div className="text-center py-16 text-slate-400">
-            A carregar dados da API...
+            Carregando dados da API...
           </div>
         ) : (
-          <CardResumo resumo={resumo} />
+          <div className="space-y-8">
+            <CardResumo resumo={resumo} />
+            <TabelaTransacoes
+              transacoes={transacoes}
+              onTransacaoRemovida={carregarDados}
+            />
+          </div>
         )}
       </div>
     </div>

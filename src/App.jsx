@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import CardResumo from "./components/CardResumo";
+import FormTransacao from "./components/FormTransacao";
 import TabelaTransacoes from "./components/TabelaTransacoes";
 import { api } from "./services/api";
 
@@ -14,24 +15,36 @@ export default function App() {
     cotacao_usd: 0,
   });
   const [carregando, setCarregando] = useState(true);
+  const [gatilhoAtualizacao, setGatilhoAtualizacao] = useState(0);
 
-  const carregarDados = useCallback(async () => {
-    try {
-      const res = await api.get("/transacoes");
-      if (res.data) {
-        setTransacoes(res.data.transacoes || []);
-        setResumo(res.data.resumo || {});
-      }
-    } catch (error) {
-      console.error("Erro ao carregar dados da API:", error);
-    } finally {
-      setCarregando(false);
-    }
-  }, []);
+  const recarregarDados = () => {
+    setGatilhoAtualizacao((prev) => prev + 1);
+  };
 
   useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+    let ativo = true;
+
+    api
+      .get("/transacoes")
+      .then((response) => {
+        if (ativo && response.data) {
+          setTransacoes(response.data.transacoes || []);
+          setResumo(response.data.resumo || {});
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao carregar dados da API:", error);
+      })
+      .finally(() => {
+        if (ativo) {
+          setCarregando(false);
+        }
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, [gatilhoAtualizacao]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100 py-10 px-4 sm:px-6 lg:px-8">
@@ -50,13 +63,14 @@ export default function App() {
             Carregando dados da API...
           </div>
         ) : (
-          <div className="space-y-8">
+          <>
             <CardResumo resumo={resumo} />
+            <FormTransacao onTransacaoAdicionada={recarregarDados} />
             <TabelaTransacoes
               transacoes={transacoes}
-              onTransacaoRemovida={carregarDados}
+              onTransacaoRemovida={recarregarDados}
             />
-          </div>
+          </>
         )}
       </div>
     </div>

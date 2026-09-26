@@ -1,67 +1,91 @@
-import { useState } from "react";
-import { PlusCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { PlusCircle, Check } from "lucide-react";
 import { api } from "../services/api";
 
-export default function FormTransacao({ onTransacaoAdicionada }) {
+export default function FormTransacao({
+  onTransacaoAdicionada,
+  transacaoEmEdicao,
+  onCancelarEdicao,
+}) {
   const [descricao, setDescricao] = useState("");
   const [valor, setValor] = useState("");
   const [tipo, setTipo] = useState("despesa");
-  const [categoria, setCategoria] = useState("");
   const [moeda, setMoeda] = useState("BRL");
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState("");
+  const [categoria, setCategoria] = useState("");
+
+  const limparFormulario = () => {
+    setDescricao("");
+    setValor("");
+    setTipo("despesa");
+    setMoeda("BRL");
+    setCategoria("");
+  };
+
+  useEffect(() => {
+    if (transacaoEmEdicao) {
+      setDescricao(transacaoEmEdicao.descricao || "");
+      setValor(transacaoEmEdicao.valor || "");
+      setTipo(transacaoEmEdicao.tipo || "despesa");
+      setMoeda(transacaoEmEdicao.moeda || "BRL");
+      setCategoria(transacaoEmEdicao.categoria || "");
+    } else {
+      limparFormulario();
+    }
+  }, [transacaoEmEdicao]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErro("");
 
-    if (!descricao.trim() || !valor || !categoria.trim()) {
-      setErro("Por favor, preencha todos os campos obrigatórios.");
+    if (!descricao || !valor || !categoria) {
+      alert("Preencha todos os campos obrigatórios.");
       return;
     }
 
-    try {
-      setSalvando(true);
-      await api.post("/transacoes", {
-        descricao: descricao.trim(),
-        valor: parseFloat(valor),
-        tipo,
-        categoria: categoria.trim(),
-        moeda,
-      });
+    const payload = {
+      descricao,
+      valor: parseFloat(valor),
+      tipo,
+      moeda,
+      categoria,
+    };
 
-      // Limpa os campos após o cadastro
-      setDescricao("");
-      setValor("");
-      setCategoria("");
-      setTipo("despesa");
-      setMoeda("BRL");
+    try {
+      if (transacaoEmEdicao) {
+        await api.put(`/transacoes/${transacaoEmEdicao.id}`, payload);
+        if (onCancelarEdicao) onCancelarEdicao();
+      } else {
+        await api.post("/transacoes", payload);
+      }
+
+      limparFormulario();
 
       if (onTransacaoAdicionada) {
         onTransacaoAdicionada();
       }
-    } catch (err) {
-      setErro(err.res?.data?.erro || "Erro ao registrar a transação.");
-    } finally {
-      setSalvando(false);
+    } catch (error) {
+      console.error("Erro ao salvar transação:", error);
+      alert("Erro ao comunicar com a API.");
     }
   };
 
   return (
     <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl shadow-sm mb-8">
-      <h2 className="text-lg font-semibold text-white mb-4">Nova Transação</h2>
-
-      {erro && (
-        <div className="p-3 mb-4 text-sm text-rose-300 bg-rose-950/50 border border-rose-800 rounded-lg">
-          {erro}
-        </div>
-      )}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold text-white">
+          {transacaoEmEdicao ? "Editar Transação" : "Nova Transação"}
+        </h2>
+        {transacaoEmEdicao && (
+          <span className="text-xs text-amber-400 bg-amber-950/40 border border-amber-800/50 px-2.5 py-0.5 rounded-full font-mono">
+            Modo Edição (ID: {transacaoEmEdicao.id})
+          </span>
+        )}
+      </div>
 
       <form
         onSubmit={handleSubmit}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4"
+        className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end"
       >
-        <div className="lg:col-span-2">
+        <div className="md:col-span-2">
           <label className="block text-xs font-medium text-slate-400 mb-1">
             Descrição
           </label>
@@ -70,7 +94,7 @@ export default function FormTransacao({ onTransacaoAdicionada }) {
             placeholder="Ex: Salário, Aluguel, Ações..."
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounde-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
 
@@ -81,11 +105,10 @@ export default function FormTransacao({ onTransacaoAdicionada }) {
           <input
             type="number"
             step="0.01"
-            min="0.01"
             placeholder="0.00"
             value={valor}
             onChange={(e) => setValor(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
           />
         </div>
 
@@ -96,7 +119,7 @@ export default function FormTransacao({ onTransacaoAdicionada }) {
           <select
             value={tipo}
             onChange={(e) => setTipo(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
           >
             <option value="receita">Receita</option>
             <option value="despesa">Despesa</option>
@@ -111,7 +134,7 @@ export default function FormTransacao({ onTransacaoAdicionada }) {
           <select
             value={moeda}
             onChange={(e) => setMoeda(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
           >
             <option value="BRL">BRL (R$)</option>
             <option value="USD">USD ($)</option>
@@ -124,21 +147,42 @@ export default function FormTransacao({ onTransacaoAdicionada }) {
           </label>
           <input
             type="text"
-            placeholder="Ex: Moradia, Renda Fixa..."
+            placeholder="Ex: Moradia, Salário..."
             value={categoria}
             onChange={(e) => setCategoria(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500 text-sm"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
           />
         </div>
 
-        <div className="lg:col-span-6 flex justify-end mt-1">
+        <div className="md:col-span-6 flex justify-end gap-3 mt-2">
+          {transacaoEmEdicao && (
+            <button
+              type="button"
+              onClick={onCancelarEdicao}
+              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            >
+              Cancelar
+            </button>
+          )}
           <button
             type="submit"
-            disabled={salvando}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm cursor-pointer"
+            className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors cursor-pointer ${
+              transacaoEmEdicao
+                ? "bg-amber-600 hover:bg-amber-500"
+                : "bg-emerald-600 hover:bg-emerald-500"
+            }`}
           >
-            <PlusCircle className="w-4 h-4" />
-            {salvando ? 'Salvando...' : 'Adicionar Transação'}
+            {transacaoEmEdicao ? (
+              <>
+                <Check className="w-4 h-4" />
+                Salvar Alterações
+              </>
+            ) : (
+              <>
+                <PlusCircle className="w-4 h-4" />
+                Adicionar Transação
+              </>
+            )}
           </button>
         </div>
       </form>

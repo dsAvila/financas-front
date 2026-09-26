@@ -7,7 +7,9 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
 
     try {
       await api.delete(`/transacoes/${id}`);
-      onTransacaoRemovida();
+      if (onTransacaoRemovida) {
+        onTransacaoRemovida();
+      }
     } catch (error) {
       console.error("Erro ao excluir transação:", error);
       alert("Não foi possível excluir a transação.");
@@ -27,6 +29,22 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
     }
   };
 
+  // Dia/Mes
+  const formatarDataCurta = (dataStr) => {
+    if (!dataStr) return "-";
+    const partes = dataStr.split("T")[0].split("-");
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}` : dataStr;
+  };
+
+  // Dia/Mes/Ano
+  const formatarDataCompleta = (dataStr) => {
+    if (!dataStr) return "";
+    const partes = dataStr.split("T")[0].split("-");
+    return partes.length === 3
+      ? `${partes[2]}/${partes[1]}/${partes[0]}`
+      : dataStr;
+  };
+
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-sm">
       <div className="p-5 border-b border-slate-700">
@@ -39,6 +57,7 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
         <table className="w-full text-left text-sm text-slate-300">
           <thead className="bg-slate-900/60 text-xs uppercase text-slate-400">
             <tr>
+              <th className="px-6 py-3">Data</th>
               <th className="px-6 py-3">Descrição</th>
               <th className="px-6 py-3">Categoria</th>
               <th className="px-6 py-3">Tipo</th>
@@ -50,7 +69,7 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
             {transacoes.length === 0 ? (
               <tr>
                 <td
-                  colSpan="5"
+                  colSpan="6"
                   className="px-6 py-8 text-center text-slate-500"
                 >
                   Nenhuma transação encontrada no banco de dados.
@@ -62,6 +81,14 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
                   key={item.id}
                   className="hover:bg-slate-700/30 transition-colors"
                 >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      title={formatarDataCompleta(item.data)}
+                      className="inline-block px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-slate-900/80 text-slate-300 border border-slate-700 hover:border-slate-500 hover:text-white transition-colors cursor-help"
+                    >
+                      {formatarDataCurta(item.data)}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 font-medium text-white">
                     {item.descricao}
                   </td>
@@ -82,7 +109,7 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
                   <td className="px-6 py-4 text-right">
                     <button
                       onClick={() => removerTransacao(item.id)}
-                      className="text-slate-400 hover:text-rose-400 p-1 rounded transition-colors"
+                      className="text-slate-400 hover:text-rose-400 p-1 rounded transition-colors cursor-pointer"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />

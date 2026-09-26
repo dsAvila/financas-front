@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import CardResumo from "./components/CardResumo";
 import FormTransacao from "./components/FormTransacao";
 import TabelaTransacoes from "./components/TabelaTransacoes";
+import GraficoAlocacao from "./components/GraficoAlocacao";
 import { api } from "./services/api";
 
 export default function App() {
@@ -65,6 +66,7 @@ export default function App() {
         ) : (
           <>
             <CardResumo resumo={resumo} />
+            <GraficoAlocacao resumo={resumo} />
             <FormTransacao onTransacaoAdicionada={recarregarDados} />
             <TabelaTransacoes
               transacoes={transacoes}

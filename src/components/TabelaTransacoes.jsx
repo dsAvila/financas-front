@@ -1,7 +1,11 @@
-import { Trash2 } from "lucide-react";
+import { Trash2, Pencil } from "lucide-react";
 import { api } from "../services/api";
 
-export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
+export default function TabelaTransacoes({
+  transacoes,
+  onTransacaoRemovida,
+  onEditarTransacao,
+}) {
   const removerTransacao = async (id) => {
     if (!confirm("Deseja realmente excluir esta transação?")) return;
 
@@ -29,14 +33,12 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
     }
   };
 
-  // Dia/Mes
   const formatarDataCurta = (dataStr) => {
     if (!dataStr) return "-";
     const partes = dataStr.split("T")[0].split("-");
     return partes.length === 3 ? `${partes[2]}/${partes[1]}` : dataStr;
   };
 
-  // Dia/Mes/Ano
   const formatarDataCompleta = (dataStr) => {
     if (!dataStr) return "";
     const partes = dataStr.split("T")[0].split("-");
@@ -106,10 +108,19 @@ export default function TabelaTransacoes({ transacoes, onTransacaoRemovida }) {
                       minimumFractionDigits: 2,
                     })}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-4 text-right whitespace-nowrap">
+                    <button
+                      onClick={() =>
+                        onEditarTransacao && onEditarTransacao(item)
+                      }
+                      className="text-slate-400 hover:text-amber-400 p-1.5 rounded transition-colors cursor-pointer mr-1"
+                      title="Editar"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     <button
                       onClick={() => removerTransacao(item.id)}
-                      className="text-slate-400 hover:text-rose-400 p-1 rounded transition-colors cursor-pointer"
+                      className="text-slate-400 hover:text-rose-400 p-1.5 rounded transition-colors cursor-pointer"
                       title="Excluir"
                     >
                       <Trash2 className="w-4 h-4" />
